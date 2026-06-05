@@ -1,6 +1,6 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef } from 'react';
 import { useAxiomStore } from '../store/axiomStore';
-import { Search, ZoomIn, ZoomOut, Maximize, Move, HelpCircle } from 'lucide-react';
+import { Search, ZoomIn, ZoomOut, Maximize, Move, HelpCircle, Activity, Radio, Cpu } from 'lucide-react';
 
 interface GraphNode {
   id: string;
@@ -11,7 +11,7 @@ interface GraphNode {
 }
 
 export const Workspace3_IntelligenceGraph: React.FC = () => {
-  const { selectedGraphNode, setSelectedGraphNode, graphViewMode, setGraphViewMode } = useAxiomStore();
+  const { selectedGraphNode, setSelectedGraphNode, graphViewMode, setGraphViewMode, analysisResult } = useAxiomStore();
   
   // Pan and Zoom States
   const [scale, setScale] = useState(0.85);
@@ -28,8 +28,7 @@ export const Workspace3_IntelligenceGraph: React.FC = () => {
     { id: 'risk', label: 'Risk Flow' }
   ];
 
-  // Defining high fidelity graph node layout
-  const nodes: GraphNode[] = [
+  const defaultNodes: GraphNode[] = [
     // Column 0: Pages
     { id: 'HomePage', name: 'HomePage', type: 'ui', col: 0, connections: ['CheckoutForm'] },
     { id: 'ProductPage', name: 'ProductPage', type: 'ui', col: 0, connections: ['OrderSummary'] },
@@ -74,9 +73,10 @@ export const Workspace3_IntelligenceGraph: React.FC = () => {
     { id: 'ext_s3', name: 'S3 Storage', type: 'external', col: 5, connections: [] }
   ];
 
+  const nodes: GraphNode[] = (analysisResult && analysisResult.nodes && analysisResult.nodes.length > 0) ? analysisResult.nodes : defaultNodes;
+
   // Mouse drag handles
   const handleMouseDown = (e: React.MouseEvent) => {
-    // Only drag if clicking canvas, not node
     if ((e.target as HTMLElement).closest('.graph-node')) return;
     setIsDragging(true);
     dragStart.current = { x: e.clientX - pan.x, y: e.clientY - pan.y };
@@ -106,18 +106,27 @@ export const Workspace3_IntelligenceGraph: React.FC = () => {
     setPan({ x: 50, y: 30 });
   };
 
-  // Node position helper metrics (X coords for columns)
   const getColX = (col: number) => {
-    return col * 200 + 40;
+    return col * 220 + 50;
   };
 
-  // Node position helper metrics (Y coords for list indices)
   const getNodeY = (nodeId: string) => {
     const colNodes = nodes.filter(n => n.col === nodes.find(x => x.id === nodeId)?.col);
     const idx = colNodes.findIndex(n => n.id === nodeId);
-    const spacing = 65;
-    const startY = 60;
+    const spacing = 70;
+    const startY = 80;
     return idx * spacing + startY;
+  };
+
+  const getNodeColor = (type: string) => {
+    switch (type) {
+      case 'ui': return '#3B82F6';
+      case 'component': return '#8B5CF6';
+      case 'api': return '#06B6D4';
+      case 'service': return '#F59E0B';
+      case 'db': return '#EF4444';
+      default: return '#10B981';
+    }
   };
 
   // Connections renderer
@@ -127,17 +136,16 @@ export const Workspace3_IntelligenceGraph: React.FC = () => {
         const targetNode = nodes.find(n => n.id === targetId);
         if (!targetNode) return null;
 
-        const x1 = getColX(sourceNode.col) + 130; // Right side of source card
-        const y1 = getNodeY(sourceNode.id) + 20;  // Vertical center of source
+        const x1 = getColX(sourceNode.col) + 140; // Right side of source card
+        const y1 = getNodeY(sourceNode.id) + 22;  // Vertical center of source
         const x2 = getColX(targetNode.col);       // Left side of target card
-        const y2 = getNodeY(targetNode.id) + 20;  // Vertical center of target
+        const y2 = getNodeY(targetNode.id) + 22;  // Vertical center of target
 
-        // Draw bezier path
         const dx = (x2 - x1) * 0.5;
         const dStr = `M ${x1} ${y1} C ${x1 + dx} ${y1}, ${x2 - dx} ${y2}, ${x2} ${y2}`;
 
-        // Highlight if source or target is selected
         const isHighlighted = selectedGraphNode === sourceNode.id || selectedGraphNode === targetNode.id;
+        const colVal = getNodeColor(sourceNode.type);
 
         return (
           <g key={`${sourceNode.id}-${targetId}`}>
@@ -145,18 +153,20 @@ export const Workspace3_IntelligenceGraph: React.FC = () => {
             <path
               d={dStr}
               fill="none"
-              stroke={
-                isHighlighted 
-                  ? 'rgba(139, 92, 246, 0.4)' 
-                  : 'rgba(255, 255, 255, 0.03)'
-              }
-              strokeWidth={isHighlighted ? 3 : 1}
+              stroke={isHighlighted ? colVal : 'rgba(6, 182, 212, 0.08)'}
+              strokeWidth={isHighlighted ? 2.5 : 1.2}
+              strokeDasharray={isHighlighted ? '0' : '4 3'}
               className="transition-all duration-200"
             />
-            {/* Animated flow dots on highlighted lines */}
+            {/* Animated flow dots on active paths */}
             {isHighlighted && (
-              <circle r="2.5" fill="#8B5CF6" className="glow-purple">
-                <animateMotion dur="2.5s" repeatCount="indefinite" path={dStr} />
+              <circle r="3" fill="#ffffff">
+                <animateMotion dur="2s" repeatCount="indefinite" path={dStr} />
+              </circle>
+            )}
+            {isHighlighted && (
+              <circle r="5" fill={colVal} opacity="0.6">
+                <animateMotion dur="2s" repeatCount="indefinite" path={dStr} />
               </circle>
             )}
           </g>
@@ -166,19 +176,22 @@ export const Workspace3_IntelligenceGraph: React.FC = () => {
   };
 
   return (
-    <div className="flex-1 bg-bg-primary flex flex-col justify-between font-sans h-full min-h-0 relative select-none">
+    <div className="flex-1 bg-[#02050b] flex flex-col justify-between font-sans h-full min-h-0 relative select-none">
+      {/* Decorative scanning grid */}
+      <div className="absolute inset-0 bg-[linear-gradient(to_bottom,rgba(255,255,255,0.005)_50%,rgba(0,0,0,0.15)_50%)] bg-[length:100%_4px] pointer-events-none z-10" />
+
       {/* Top Controls Row */}
-      <div className="h-11 border-b border-border-color bg-surface/20 flex items-center justify-between px-4 z-10">
+      <div className="h-12 border-b border-cyan-500/20 bg-[#060c18]/80 flex items-center justify-between px-4 z-10 shadow-[0_4px_20px_rgba(6,182,212,0.05)]">
         {/* View Flow Selector */}
         <div className="flex space-x-1.5">
           {viewTabs.map(tab => (
             <button
               key={tab.id}
               onClick={() => setGraphViewMode(tab.id as any)}
-              className={`px-3 py-1 rounded text-[10.5px] font-bold transition-all cursor-pointer ${
+              className={`px-3 py-1 rounded-sm text-[10px] font-bold font-mono tracking-wider transition-all cursor-pointer uppercase ${
                 graphViewMode === tab.id
-                  ? 'bg-primary-purple text-text-primary glow-purple'
-                  : 'text-text-secondary hover:text-text-primary hover:bg-surface/30'
+                  ? 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/40 shadow-[0_0_10px_rgba(6,182,212,0.15)]'
+                  : 'text-slate-500 hover:text-cyan-400 hover:bg-cyan-500/5'
               }`}
             >
               {tab.label}
@@ -188,22 +201,23 @@ export const Workspace3_IntelligenceGraph: React.FC = () => {
 
         {/* Search */}
         <div className="relative max-w-xs flex-1 mx-4">
-          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3 w-3 text-text-secondary" />
+          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-cyan-500/50" />
           <input
             type="text"
-            placeholder="Search nodes, files, APIs, DB..."
-            className="w-full bg-surface border border-border-color rounded pl-7 pr-3 py-1 text-[10px] text-text-primary focus:outline-none focus:border-primary-purple/40"
+            placeholder="FILTER NODES, SERVICES, DATABASE ENTITIES..."
+            className="w-full bg-[#030712] border border-cyan-500/20 rounded-sm pl-8 pr-3 py-1 text-[9px] text-cyan-400 placeholder-cyan-500/40 font-mono focus:outline-none focus:border-cyan-500/55 shadow-[inset_0_0_10px_rgba(6,182,212,0.03)]"
           />
         </div>
 
         {/* Zoom scale / tools */}
         <div className="flex items-center space-x-1">
-          <span className="text-[10px] font-mono text-text-secondary mr-2">{Math.round(scale * 100)}%</span>
-          <button onClick={() => handleZoom(true)} className="p-1 hover:bg-surface rounded text-text-secondary hover:text-text-primary transition-colors cursor-pointer" title="Zoom In"><ZoomIn className="h-3.5 w-3.5" /></button>
-          <button onClick={() => handleZoom(false)} className="p-1 hover:bg-surface rounded text-text-secondary hover:text-text-primary transition-colors cursor-pointer" title="Zoom Out"><ZoomOut className="h-3.5 w-3.5" /></button>
-          <button onClick={handleResetPan} className="p-1 hover:bg-surface rounded text-text-secondary hover:text-text-primary transition-colors cursor-pointer" title="Reset View"><Maximize className="h-3.5 w-3.5" /></button>
-          <div className="h-4 w-px bg-border-color mx-1" />
-          <button className="p-1 hover:bg-surface rounded text-text-secondary hover:text-text-primary transition-colors cursor-pointer" title="Help Guide"><HelpCircle className="h-3.5 w-3.5" /></button>
+          <div className="flex items-center space-x-1 bg-cyan-500/5 border border-cyan-500/20 rounded-sm px-2 py-0.5 mr-2 font-mono text-[9px] text-cyan-400">
+            <Activity size={10} className="text-cyan-400 animate-pulse" />
+            <span>SCALE: {Math.round(scale * 100)}%</span>
+          </div>
+          <button onClick={() => handleZoom(true)} className="p-1 hover:bg-cyan-500/10 rounded text-cyan-400 hover:text-white transition-colors cursor-pointer" title="Zoom In"><ZoomIn className="h-3.5 w-3.5" /></button>
+          <button onClick={() => handleZoom(false)} className="p-1 hover:bg-cyan-500/10 rounded text-cyan-400 hover:text-white transition-colors cursor-pointer" title="Zoom Out"><ZoomOut className="h-3.5 w-3.5" /></button>
+          <button onClick={handleResetPan} className="p-1 hover:bg-cyan-500/10 rounded text-cyan-400 hover:text-white transition-colors cursor-pointer" title="Reset View"><Maximize className="h-3.5 w-3.5" /></button>
         </div>
       </div>
 
@@ -214,24 +228,28 @@ export const Workspace3_IntelligenceGraph: React.FC = () => {
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}
         onMouseLeave={handleMouseUp}
-        className={`flex-1 min-h-0 overflow-hidden relative cursor-grab active:cursor-grabbing bg-[radial-gradient(rgba(255,255,255,0.015)_1px,transparent_1px)] bg-[size:16px_16px]`}
+        className="flex-1 min-h-0 overflow-hidden relative cursor-grab active:cursor-grabbing bg-[radial-gradient(rgba(6,182,212,0.06)_1.2px,transparent_1.2px)] bg-[size:24px_24px] shadow-[inset_0_0_40px_rgba(6,182,212,0.03)]"
       >
+        {/* Radar scope rings decorations */}
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 h-[450px] w-[450px] rounded-full border border-cyan-500/5 pointer-events-none" />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 h-[700px] w-[700px] rounded-full border border-cyan-500/5 pointer-events-none" />
+
         <div 
           className="absolute origin-top-left transition-transform duration-75 ease-out"
           style={{ transform: `translate(${pan.x}px, ${pan.y}px) scale(${scale})` }}
         >
           {/* Column Header Titles */}
-          <div className="absolute top-0 left-0 flex text-[9px] font-black text-text-secondary uppercase tracking-widest pointer-events-none pb-4">
-            <span style={{ left: `${getColX(0)}px`, position: 'absolute', width: '130px', textAlign: 'center' }}>User Interface</span>
-            <span style={{ left: `${getColX(1)}px`, position: 'absolute', width: '130px', textAlign: 'center' }}>Components</span>
-            <span style={{ left: `${getColX(2)}px`, position: 'absolute', width: '130px', textAlign: 'center' }}>API Endpoints</span>
-            <span style={{ left: `${getColX(3)}px`, position: 'absolute', width: '130px', textAlign: 'center' }}>Services</span>
-            <span style={{ left: `${getColX(4)}px`, position: 'absolute', width: '130px', textAlign: 'center' }}>Database (Postgres)</span>
-            <span style={{ left: `${getColX(5)}px`, position: 'absolute', width: '130px', textAlign: 'center' }}>External Services</span>
+          <div className="absolute top-0 left-0 flex text-[8.5px] font-black text-cyan-500/40 uppercase tracking-widest font-mono pointer-events-none pb-4">
+            <span style={{ left: `${getColX(0)}px`, position: 'absolute', width: '140px', textAlign: 'center' }}>[01] USER_INTERFACES</span>
+            <span style={{ left: `${getColX(1)}px`, position: 'absolute', width: '140px', textAlign: 'center' }}>[02] REACT_COMPONENTS</span>
+            <span style={{ left: `${getColX(2)}px`, position: 'absolute', width: '140px', textAlign: 'center' }}>[03] API_ENDPOINTS</span>
+            <span style={{ left: `${getColX(3)}px`, position: 'absolute', width: '140px', textAlign: 'center' }}>[04] ROUTER_SERVICES</span>
+            <span style={{ left: `${getColX(4)}px`, position: 'absolute', width: '140px', textAlign: 'center' }}>[05] DATABASE_RELATIONS</span>
+            <span style={{ left: `${getColX(5)}px`, position: 'absolute', width: '140px', textAlign: 'center' }}>[06] EXTERNAL_SYSTEMS</span>
           </div>
 
           {/* SVG Connection Lines */}
-          <svg className="absolute inset-0 pointer-events-none" style={{ width: '1500px', height: '800px' }}>
+          <svg className="absolute inset-0 pointer-events-none" style={{ width: '1600px', height: '850px' }}>
             {renderConnections()}
           </svg>
 
@@ -240,31 +258,33 @@ export const Workspace3_IntelligenceGraph: React.FC = () => {
             const isSelected = selectedGraphNode === node.id;
             const x = getColX(node.col);
             const y = getNodeY(node.id);
+            const nodeCol = getNodeColor(node.type);
 
             return (
               <div
                 key={node.id}
                 onClick={() => setSelectedGraphNode(node.id)}
-                className={`graph-node absolute w-[130px] p-2 rounded-md border text-center transition-all duration-200 cursor-pointer ${
+                className={`graph-node absolute w-[140px] p-2.5 rounded-sm border transition-all duration-200 cursor-pointer ${
                   isSelected 
-                    ? 'bg-surface border-primary-purple text-text-primary glow-purple font-bold z-30' 
-                    : 'bg-surface/50 border-border-color hover:border-text-secondary text-text-secondary hover:text-text-primary z-20'
+                    ? 'bg-[#050b18]/95 text-white shadow-2xl z-30 font-bold' 
+                    : 'bg-[#050b18]/60 border-cyan-500/20 hover:border-cyan-500/50 text-slate-400 hover:text-white z-20'
                 }`}
-                style={{ left: `${x}px`, top: `${y}px` }}
+                style={{ 
+                  left: `${x}px`, 
+                  top: `${y}px`,
+                  borderColor: isSelected ? nodeCol : 'rgba(6, 182, 212, 0.2)',
+                  boxShadow: isSelected ? `0 0 15px ${nodeCol}40` : 'none',
+                  borderLeft: `3px solid ${nodeCol}`
+                }}
               >
-                <div className="text-[10px] truncate leading-tight">{node.name}</div>
-                {node.type === 'api' && (
-                  <div className="text-[7.5px] uppercase tracking-wider font-mono text-secondary-blue font-bold mt-0.5">API Layer</div>
-                )}
-                {node.type === 'service' && (
-                  <div className="text-[7.5px] uppercase tracking-wider font-mono text-warning font-bold mt-0.5">Service</div>
-                )}
-                {node.type === 'db' && (
-                  <div className="text-[7.5px] uppercase tracking-wider font-mono text-success font-bold mt-0.5">Database</div>
-                )}
-                {node.type === 'component' && (
-                  <div className="text-[7.5px] uppercase tracking-wider font-mono text-primary-purple font-bold mt-0.5">Component</div>
-                )}
+                <div className="text-[10px] font-mono tracking-wide truncate leading-tight flex justify-between items-center">
+                  <span className="truncate">{node.name}</span>
+                  {isSelected && <div className="h-1.5 w-1.5 rounded-full bg-cyan-400 animate-ping shrink-0 ml-1.5" />}
+                </div>
+                <div className="text-[7.5px] uppercase tracking-widest font-mono font-bold mt-1.5 text-slate-500 flex justify-between items-center">
+                  <span>{node.type}</span>
+                  <span style={{ color: nodeCol }}>●</span>
+                </div>
               </div>
             );
           })}
@@ -272,9 +292,9 @@ export const Workspace3_IntelligenceGraph: React.FC = () => {
       </div>
 
       {/* Floating Canvas Tip */}
-      <div className="absolute bottom-3 left-3 bg-surface/85 backdrop-blur border border-border-color text-[8px] uppercase tracking-widest text-text-secondary px-2 py-1 rounded flex items-center space-x-1">
-        <Move className="h-3 w-3 mr-1" />
-        <span>Drag canvas to Pan • Scroll wheel to Zoom</span>
+      <div className="absolute bottom-3 left-3 bg-[#050b18]/90 backdrop-blur border border-cyan-500/30 text-[8px] font-mono tracking-widest text-cyan-400 px-3 py-1.5 rounded-sm flex items-center space-x-1.5 z-20 shadow-[0_0_15px_rgba(6,182,212,0.1)]">
+        <Move className="h-3 w-3 mr-1 animate-pulse" />
+        <span>DRAG_PAN // SCROLL_ZOOM</span>
       </div>
     </div>
   );

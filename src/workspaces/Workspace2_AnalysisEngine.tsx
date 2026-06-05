@@ -1,6 +1,6 @@
 import React from 'react';
 import { useAxiomStore } from '../store/axiomStore';
-import { Play, Check, Loader2, AlertCircle } from 'lucide-react';
+import { Play, Check, Loader2, Cpu, Radio, Shield, Activity } from 'lucide-react';
 
 export const Workspace2_AnalysisEngine: React.FC = () => {
   const { analysisProgress, isAnalyzing, startAnalysis } = useAxiomStore();
@@ -53,23 +53,28 @@ export const Workspace2_AnalysisEngine: React.FC = () => {
   ];
 
   return (
-    <div className="flex-1 bg-bg-primary p-6 overflow-y-auto flex flex-col justify-between font-sans h-full min-h-0 select-none">
-      <div className="space-y-6 flex-1 flex flex-col">
+    <div className="flex-1 bg-[#02050b] p-6 overflow-y-auto flex flex-col justify-between font-sans h-full min-h-0 select-none relative">
+      {/* Scanline pattern overlay */}
+      <div className="absolute inset-0 bg-[linear-gradient(to_bottom,rgba(255,255,255,0.005)_50%,rgba(0,0,0,0.15)_50%)] bg-[length:100%_4px] pointer-events-none z-10" />
+
+      <div className="space-y-6 flex-1 flex flex-col z-20">
         {/* Header */}
-        <div className="flex justify-between items-center">
+        <div className="flex justify-between items-center border-b border-cyan-500/20 pb-3">
           <div>
-            <h2 className="text-lg font-bold text-text-primary uppercase tracking-wide">Analysis Engine</h2>
-            <span className="text-[11px] text-text-secondary">
-              {isAnalyzing ? 'Deep code intelligence analysis in progress...' : 'Analysis idle. Trigger scanner to map dependencies.'}
+            <h2 className="text-lg font-black text-cyan-400 uppercase tracking-widest flex items-center gap-2">
+              <Cpu className="h-5 w-5 text-cyan-400 animate-pulse" /> Analysis Engine
+            </h2>
+            <span className="text-[11px] text-slate-400 font-mono uppercase tracking-wider block mt-0.5">
+              {isAnalyzing ? 'Deep code intelligence scanner compiling project structure...' : 'Scanner system online. Trigger code mapping.'}
             </span>
           </div>
           {!isAnalyzing && analysisProgress === 0 && (
             <button
               onClick={startAnalysis}
-              className="bg-primary-purple hover:bg-primary-purple/90 text-text-primary text-xs font-bold py-1.5 px-4 rounded-lg flex items-center space-x-1.5 cursor-pointer border border-primary-purple/20 transition-all"
+              className="bg-cyan-500/20 hover:bg-cyan-500/35 text-cyan-400 text-xs font-bold font-mono tracking-widest py-1.5 px-4 rounded border border-cyan-500/40 flex items-center space-x-1.5 cursor-pointer transition-all shadow-[0_0_10px_rgba(6,182,212,0.15)]"
             >
-              <Play className="h-3 w-3 fill-text-primary" />
-              <span>Start Code Analysis</span>
+              <Play className="h-3 w-3 fill-cyan-400 text-cyan-400" />
+              <span>START_SCANNER</span>
             </button>
           )}
         </div>
@@ -78,31 +83,31 @@ export const Workspace2_AnalysisEngine: React.FC = () => {
         <div className="flex-1 grid grid-cols-12 gap-4 items-center justify-center min-h-[300px]">
           {/* Top Left: Frontend Analysis */}
           <div className="col-span-3 space-y-4">
-            <AnalysisCard card={cards[0]} progress={analysisProgress} />
-            <AnalysisCard card={cards[2]} progress={analysisProgress} />
+            <AnalysisCard card={cards[0]} progress={analysisProgress} color="#3B82F6" />
+            <AnalysisCard card={cards[2]} progress={analysisProgress} color="#EF4444" />
           </div>
 
           {/* Center: Glowing Rings Scanner */}
           <div className="col-span-6 flex flex-col items-center justify-center relative">
             <div className="relative h-64 w-64 flex items-center justify-center">
               {/* Outer scanning halo */}
-              <div className="absolute inset-0 rounded-full border border-primary-purple/25 spin-slow pulse-glow" />
+              <div className="absolute inset-0 rounded-full border border-cyan-500/20 animate-spin" style={{ animationDuration: '8s' }} />
               
               {/* Outer neon dot rings */}
-              <div className="absolute inset-4 rounded-full border-2 border-dashed border-primary-purple/40 spin-slow-reverse" />
+              <div className="absolute inset-4 rounded-full border-2 border-dashed border-cyan-400/35 animate-spin" style={{ animationDuration: '12s', animationDirection: 'reverse' }} />
               
               {/* Inner glowing tracker ring */}
-              <div className="absolute inset-8 rounded-full border border-secondary-blue/30 spin-slow" />
-              <div className="absolute inset-10 rounded-full border border-dashed border-success/30 spin-slow-reverse" />
+              <div className="absolute inset-8 rounded-full border border-purple-500/30 animate-spin" style={{ animationDuration: '6s' }} />
+              <div className="absolute inset-10 rounded-full border border-dashed border-green-500/30 animate-spin" style={{ animationDuration: '4s', animationDirection: 'reverse' }} />
               
               {/* Core gauge screen */}
-              <div className="absolute inset-14 bg-bg-secondary rounded-full border border-border-color shadow-2xl flex flex-col items-center justify-center p-4">
-                <span className="text-[10px] font-bold text-text-secondary uppercase tracking-widest text-center">Analyzing</span>
-                <span className="text-4xl font-black text-text-primary font-mono my-1 tracking-tighter">
+              <div className="absolute inset-14 bg-[#050b18] rounded-full border border-cyan-500/30 shadow-[0_0_30px_rgba(6,182,212,0.15)] flex flex-col items-center justify-center p-4">
+                <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest font-mono text-center">SCANNED</span>
+                <span className="text-4xl font-black text-cyan-400 font-mono my-1 tracking-tighter shadow-cyan">
                   {analysisProgress}%
                 </span>
-                <span className="text-[9px] text-primary-purple font-semibold text-center leading-tight max-w-[110px]">
-                  {analysisProgress === 100 ? 'Knowledge Graph Complete' : 'Building Knowledge Graph'}
+                <span className="text-[8.5px] text-cyan-500 font-semibold font-mono text-center leading-tight max-w-[110px] uppercase">
+                  {analysisProgress === 100 ? 'Knowledge Matrix OK' : 'Building Graph...'}
                 </span>
               </div>
             </div>
@@ -110,25 +115,25 @@ export const Workspace2_AnalysisEngine: React.FC = () => {
 
           {/* Top Right: Backend & Infrastructure */}
           <div className="col-span-3 space-y-4">
-            <AnalysisCard card={cards[1]} progress={analysisProgress} />
-            <AnalysisCard card={cards[3]} progress={analysisProgress} />
+            <AnalysisCard card={cards[1]} progress={analysisProgress} color="#06B6D4" />
+            <AnalysisCard card={cards[3]} progress={analysisProgress} color="#F59E0B" />
           </div>
         </div>
 
         {/* Bottom statistics summary banner */}
-        <div className="border-t border-border-color pt-4">
-          <span className="text-[10px] font-bold text-text-secondary uppercase tracking-widest block mb-3 text-center">Building Intelligence Graph</span>
+        <div className="border-t border-cyan-500/20 pt-4">
+          <span className="text-[9px] font-bold text-cyan-500/50 uppercase tracking-widest font-mono block mb-3 text-center">KNOWLEDGE MATRIX TELEMETRY STATS</span>
           <div className="grid grid-cols-6 gap-4 text-center max-w-4xl mx-auto text-xs">
             {[
-              { label: 'Files Scanned', val: analysisProgress === 100 ? '1,842' : `${Math.round(18.42 * analysisProgress)} / 1,842`, col: 'text-text-primary' },
-              { label: 'Lines of Code', val: '128,456', col: 'text-text-primary' },
-              { label: 'Components', val: analysisProgress === 100 ? '892' : Math.round(8.92 * analysisProgress), col: 'text-primary-purple' },
-              { label: 'API Endpoints', val: analysisProgress === 100 ? '156' : Math.round(1.56 * analysisProgress), col: 'text-secondary-blue' },
-              { label: 'Dependencies', val: analysisProgress === 100 ? '2,341' : Math.round(23.41 * analysisProgress), col: 'text-warning' },
-              { label: 'Relationships', val: analysisProgress === 100 ? '8,742' : Math.round(87.42 * analysisProgress), col: 'text-success' }
+              { label: 'Files Scanned', val: analysisProgress === 100 ? '1,842' : `${Math.round(18.42 * analysisProgress)} / 1,842`, col: 'text-white' },
+              { label: 'Lines of Code', val: '128,456', col: 'text-white' },
+              { label: 'Components', val: analysisProgress === 100 ? '892' : Math.round(8.92 * analysisProgress), col: 'text-purple-400' },
+              { label: 'API Endpoints', val: analysisProgress === 100 ? '156' : Math.round(1.56 * analysisProgress), col: 'text-cyan-400' },
+              { label: 'Dependencies', val: analysisProgress === 100 ? '2,341' : Math.round(23.41 * analysisProgress), col: 'text-yellow-400' },
+              { label: 'Relationships', val: analysisProgress === 100 ? '8,742' : Math.round(87.42 * analysisProgress), col: 'text-green-400' }
             ].map(stat => (
-              <div key={stat.label} className="bg-surface/20 border border-border-color/30 rounded-lg p-2.5">
-                <span className="text-[9px] text-text-secondary block font-semibold mb-0.5">{stat.label}</span>
+              <div key={stat.label} className="bg-[#050b18]/85 border border-cyan-500/10 rounded-sm p-2.5 shadow-[0_0_10px_rgba(6,182,212,0.01)]">
+                <span className="text-[9px] text-slate-400 block font-semibold font-mono uppercase tracking-wider mb-0.5">{stat.label}</span>
                 <span className={`text-sm font-bold font-mono ${stat.col}`}>{stat.val}</span>
               </div>
             ))}
@@ -140,33 +145,35 @@ export const Workspace2_AnalysisEngine: React.FC = () => {
 };
 
 /* Mini Helper Component for the 4 card panels */
-const AnalysisCard: React.FC<{ card: any, progress: number }> = ({ card, progress }) => {
+const AnalysisCard: React.FC<{ card: any, progress: number, color: string }> = ({ card, progress, color }) => {
   return (
-    <div className="bg-surface/30 border border-border-color rounded-lg p-3.5 text-xs select-none">
-      <div className="flex justify-between items-center border-b border-border-color/30 pb-2 mb-2">
+    <div 
+      className="bg-[#050b18]/85 border border-cyan-500/20 rounded p-3.5 text-xs select-none shadow-[0_0_15px_rgba(6,182,212,0.02)]"
+      style={{ borderLeft: `3px solid ${color}` }}
+    >
+      <div className="flex justify-between items-center border-b border-cyan-500/10 pb-2 mb-2">
         <div>
-          <h3 className="font-bold text-text-primary text-[11px] tracking-wide">{card.title}</h3>
-          <span className="text-[8px] text-text-secondary">{card.files}</span>
+          <h3 className="font-bold text-white font-mono text-[10.5px] tracking-wide">{card.title}</h3>
+          <span className="text-[8px] font-mono text-slate-500">{card.files}</span>
         </div>
-        <span className="text-xs font-bold text-primary-purple font-mono">{card.pct}%</span>
+        <span className="text-xs font-bold font-mono" style={{ color }}>{card.pct}%</span>
       </div>
 
-      <div className="space-y-1.5 text-[10px] text-text-secondary">
+      <div className="space-y-1.5 text-[9.5px] text-slate-400 font-mono">
         {card.items.map((item: any, idx: number) => {
-          // Calculate if item is active/spinning (next inline item to solve)
           const isDone = item.done;
           const isPending = !isDone && progress > 0;
           
           return (
             <div key={idx} className="flex items-center justify-between">
-              <span className={isDone ? 'text-text-primary' : 'text-text-secondary'}>{item.label}</span>
+              <span className={isDone ? 'text-slate-200' : 'text-slate-500'}>{item.label}</span>
               <span className="shrink-0 ml-2">
                 {isDone ? (
-                  <Check className="h-3.5 w-3.5 text-success font-black" />
+                  <Check className="h-3.5 w-3.5 text-green-400 font-black" />
                 ) : isPending && idx === card.items.filter((i: any) => i.done).length ? (
-                  <Loader2 className="h-3 w-3 text-primary-purple animate-spin" />
+                  <Loader2 className="h-3 w-3 text-cyan-400 animate-spin" />
                 ) : (
-                  <div className="h-1.5 w-1.5 rounded-full bg-border-color mx-1" />
+                  <div className="h-1 w-1 rounded-full bg-slate-700 mx-1" />
                 )}
               </span>
             </div>

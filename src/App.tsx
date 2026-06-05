@@ -6,6 +6,8 @@ import { LeftSidebar } from './components/LeftSidebar';
 import { RightSidebar } from './components/RightSidebar';
 import { BottomConsole } from './components/BottomConsole';
 import { StatusBar } from './components/StatusBar';
+import { AIProviderModal } from './components/AIProviderModal';
+
 
 // Workspaces
 import { Workspace_Explorer } from './workspaces/Workspace_Explorer';
@@ -82,6 +84,9 @@ function App() {
 
       {/* 3. Window footer status bar */}
       <StatusBar />
+      
+      {/* Global settings modal overlay */}
+      <AIProviderModal />
     </div>
   );
 }

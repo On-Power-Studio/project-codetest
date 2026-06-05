@@ -3,7 +3,16 @@ import { useAxiomStore } from '../store/axiomStore';
 import { GitBranch, AlertCircle, RefreshCw, CheckCircle, Zap, Shield, Play } from 'lucide-react';
 
 export const StatusBar: React.FC = () => {
-  const { activeWorkspace, isImporting, isAnalyzing, importProgress, analysisProgress } = useAxiomStore();
+  const { 
+    activeWorkspace, 
+    isImporting, 
+    isAnalyzing, 
+    importProgress, 
+    analysisProgress,
+    aiProvider,
+    aiModel,
+    aiConnected
+  } = useAxiomStore();
 
   return (
     <div className="h-6.5 bg-bg-tertiary border-t border-border-color flex items-center justify-between px-3 text-[10px] text-text-secondary select-none font-sans font-medium">
@@ -19,6 +28,14 @@ export const StatusBar: React.FC = () => {
         <div className="flex items-center space-x-2 text-warning hover:text-text-primary cursor-pointer transition-colors">
           <AlertCircle className="h-3 w-3" />
           <span>0 ⚠️ 3</span>
+        </div>
+
+        {/* AI Provider Indicator */}
+        <div className="flex items-center space-x-1">
+          <span>CORE:</span>
+          <span className={aiConnected ? "text-cyan-400 font-bold font-mono" : "text-amber-500 font-bold font-mono animate-pulse"}>
+            {aiConnected ? `${aiProvider.toUpperCase()}/${aiModel}` : 'STANDBY'}
+          </span>
         </div>
 
         {/* Dynamic status alert */}

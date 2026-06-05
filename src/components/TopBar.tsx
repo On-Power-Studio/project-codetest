@@ -3,10 +3,17 @@ import { useAxiomStore } from '../store/axiomStore';
 import { Search, ChevronDown, RefreshCw, Play, Settings, Minus, Square, X, Zap } from 'lucide-react';
 
 export const TopBar: React.FC = () => {
-  const { activeWorkspace, setActiveWorkspace } = useAxiomStore();
+  const { 
+    activeWorkspace, 
+    setActiveWorkspace,
+    aiProvider,
+    aiModel,
+    aiConnected,
+    setShowAiSettings 
+  } = useAxiomStore();
 
   return (
-    <div className="h-12 bg-bg-secondary border-b border-border-color flex items-center justify-between px-4 select-none">
+    <div className="h-12 bg-bg-secondary border-b border-border-color flex items-center justify-between px-4 select-none font-sans">
       {/* Left section: Logo and current project context */}
       <div className="flex items-center space-x-3">
         <div className="flex items-center space-x-1.5 cursor-pointer" onClick={() => setActiveWorkspace('projects')}>
@@ -47,6 +54,20 @@ export const TopBar: React.FC = () => {
 
       {/* Right section: System statuses and Window Utilities */}
       <div className="flex items-center space-x-4">
+        {/* AI Status Badge */}
+        <div 
+          onClick={() => setShowAiSettings(true)}
+          className={`flex items-center space-x-2 text-xs font-semibold px-2.5 py-1 rounded-full border cursor-pointer transition-colors ${
+            aiConnected 
+              ? 'text-cyan-400 bg-cyan-500/10 border-cyan-500/20 hover:bg-cyan-500/20' 
+              : 'text-amber-500 bg-amber-500/10 border-amber-500/20 hover:bg-amber-500/20'
+          }`}
+          title="Click to configure AI Core settings"
+        >
+          <div className={`h-1.5 w-1.5 rounded-full ${aiConnected ? 'bg-cyan-400' : 'bg-amber-500 animate-pulse'}`} />
+          <span>AI: {aiConnected ? `${aiProvider} (${aiModel})` : 'Offline / Config'}</span>
+        </div>
+
         {/* Live system state badge */}
         <div className="flex items-center space-x-2 text-xs font-medium text-success bg-success/10 px-2.5 py-1 rounded-full border border-success/20">
           <div className="h-1.5 w-1.5 rounded-full bg-success animate-ping" />
@@ -68,7 +89,7 @@ export const TopBar: React.FC = () => {
           <button 
             className="p-1.5 rounded hover:bg-surface text-text-secondary hover:text-text-primary transition-colors cursor-pointer" 
             title="Axiom Settings"
-            onClick={() => setActiveWorkspace('settings')}
+            onClick={() => setShowAiSettings(true)}
           >
             <Settings className="h-3.5 w-3.5" />
           </button>

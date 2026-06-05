@@ -1,4 +1,13 @@
 import { create } from 'zustand';
+import {
+  type AIProvider,
+  type AIConfig,
+  sendAIMessage,
+  testAIConnection,
+  fetchOllamaModels,
+  PROVIDER_DEFAULTS,
+  buildSystemPrompt
+} from '../services/aiService';
 
 export type WorkspaceType = 
   | 'explorer' 
@@ -146,6 +155,46 @@ interface AxiomState {
   toggleTwinLayer: (layer: keyof AxiomState['twinLayers']) => void;
   twinPreset: 'overview' | 'risk' | 'traffic' | 'coverage' | 'dependency' | 'prediction';
   setTwinPreset: (preset: AxiomState['twinPreset']) => void;
+
+  // AI settings
+  aiProvider: AIProvider;
+  aiApiKey: string;
+  aiModel: string;
+  aiBaseUrl: string;
+  aiConnected: boolean;
+  aiConnecting: boolean;
+  aiLatencyMs?: number;
+  aiConnectionError?: string;
+  showAiSettings: boolean;
+  setAiProvider: (provider: AIProvider) => void;
+  setAiApiKey: (key: string) => void;
+  setAiModel: (model: string) => void;
+  setAiBaseUrl: (url: string) => void;
+  setShowAiSettings: (open: boolean) => void;
+  testConnection: () => Promise<void>;
+  ollamaModels: string[];
+  loadOllamaModels: () => Promise<void>;
+
+  // Pipeline state
+  importedProject: {
+    name: string;
+    owner: string;
+    url: string;
+    frameworks: string[];
+    files: number;
+    lines: number;
+    structure: any;
+  } | null;
+  analysisResult: {
+    nodes: any[];
+    edges: any[];
+    riskAreas: string[];
+    coverageGaps: string[];
+    complexity: number;
+  } | null;
+  generatedTests: any[];
+  aiStreaming: boolean;
+  aiStreamContent: string;
 }
 
 export const useAxiomStore = create<AxiomState>((set, get) => ({
@@ -201,6 +250,33 @@ export const useAxiomStore = create<AxiomState>((set, get) => ({
         }));
         
         if (p === 100) {
+          let owner = 'your-org';
+          let name = 'ecommerce-platform';
+          try {
+            const urlObj = new URL(get().repoUrl);
+            const pathParts = urlObj.pathname.split('/').filter(Boolean);
+            if (pathParts.length >= 2) {
+              owner = pathParts[0];
+              name = pathParts[1].replace(/\.git$/, '');
+            }
+          } catch {}
+
+          set({
+            importedProject: {
+              name,
+              owner,
+              url: get().repoUrl,
+              frameworks: ['Next.js', 'React', 'TypeScript', 'Node.js', 'PostgreSQL', 'Tailwind CSS'],
+              files: 1245,
+              lines: 128456,
+              structure: {
+                frontend: { files: 245, pages: 86, components: 128, utils: 31 },
+                backend: { files: 612, controllers: 54, services: 79, routes: 18 },
+                database: { files: 156 }
+              }
+            }
+          });
+
           // Switch to Analysis Engine automatically!
           setTimeout(() => {
             set({ activeWorkspace: 'analysis' });
@@ -462,5 +538,100 @@ export const useAxiomStore = create<AxiomState>((set, get) => ({
     }
   })),
   twinPreset: 'overview',
-  setTwinPreset: (twinPreset) => set({ twinPreset })
+  setTwinPreset: (twinPreset) => set({ twinPreset }),
+
+  // AI settings
+  aiProvider: (localStorage.getItem('axiom_ai_provider') || 'openai') as AIProvider,
+  aiApiKey: localStorage.getItem('axiom_ai_key') || '',
+  aiModel: localStorage.getItem('axiom_ai_model') || PROVIDER_DEFAULTS[(localStorage.getItem('axiom_ai_provider') || 'openai') as AIProvider]?.model || '',
+  aiBaseUrl: localStorage.getItem('axiom_ai_url') || PROVIDER_DEFAULTS[(localStorage.getItem('axiom_ai_provider') || 'openai') as AIProvider]?.baseUrl || '',
+  aiConnected: localStorage.getItem('axiom_ai_connected') === 'true',
+  aiConnecting: false,
+  aiLatencyMs: undefined,
+  aiConnectionError: undefined,
+  showAiSettings: false,
+  ollamaModels: [],
+
+  setAiProvider: (provider) => {
+    localStorage.setItem('axiom_ai_provider', provider);
+    const defaults = PROVIDER_DEFAULTS[provider] || {};
+    const model = defaults.model || '';
+    const baseUrl = defaults.baseUrl || '';
+    localStorage.setItem('axiom_ai_model', model);
+    localStorage.setItem('axiom_ai_url', baseUrl);
+    set({ 
+      aiProvider: provider, 
+      aiModel: model, 
+      aiBaseUrl: baseUrl, 
+      aiConnected: false,
+      aiLatencyMs: undefined,
+      aiConnectionError: undefined 
+    });
+    if (provider === 'ollama') {
+      get().loadOllamaModels();
+    }
+  },
+
+  setAiApiKey: (key) => {
+    localStorage.setItem('axiom_ai_key', key);
+    set({ aiApiKey: key, aiConnected: false });
+  },
+
+  setAiModel: (model) => {
+    localStorage.setItem('axiom_ai_model', model);
+    set({ aiModel: model, aiConnected: false });
+  },
+
+  setAiBaseUrl: (url) => {
+    localStorage.setItem('axiom_ai_url', url);
+    set({ aiBaseUrl: url, aiConnected: false });
+    if (get().aiProvider === 'ollama') {
+      get().loadOllamaModels();
+    }
+  },
+
+  setShowAiSettings: (open) => set({ showAiSettings: open }),
+
+  testConnection: async () => {
+    set({ aiConnecting: true, aiConnectionError: undefined });
+    const config: AIConfig = {
+      provider: get().aiProvider,
+      apiKey: get().aiApiKey,
+      model: get().aiModel,
+      baseUrl: get().aiBaseUrl,
+    };
+    const res = await testAIConnection(config);
+    if (res.ok) {
+      localStorage.setItem('axiom_ai_connected', 'true');
+      set({ 
+        aiConnected: true, 
+        aiConnecting: false, 
+        aiLatencyMs: res.latencyMs, 
+        aiConnectionError: undefined 
+      });
+    } else {
+      localStorage.setItem('axiom_ai_connected', 'false');
+      set({ 
+        aiConnected: false, 
+        aiConnecting: false, 
+        aiLatencyMs: undefined, 
+        aiConnectionError: res.error || 'Connection test failed' 
+      });
+    }
+  },
+
+  loadOllamaModels: async () => {
+    const models = await fetchOllamaModels(get().aiBaseUrl);
+    set({ ollamaModels: models });
+    if (models.length > 0 && !models.includes(get().aiModel)) {
+      set({ aiModel: models[0] });
+    }
+  },
+
+  // Pipeline state
+  importedProject: null,
+  analysisResult: null,
+  generatedTests: [],
+  aiStreaming: false,
+  aiStreamContent: '',
 }));
