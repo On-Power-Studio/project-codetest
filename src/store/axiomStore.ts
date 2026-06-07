@@ -32,7 +32,7 @@ interface LogEntry {
 interface TestItem {
   id: string;
   name: string;
-  category: 'ui' | 'api' | 'db' | 'integration' | 'security' | 'performance';
+  category: 'ui' | 'api' | 'db' | 'integration' | 'security' | 'performance' | 'compliance';
   env?: string;
   status: 'Generated' | 'Generating' | 'Queued';
 }
@@ -195,6 +195,27 @@ interface AxiomState {
   generatedTests: any[];
   aiStreaming: boolean;
   aiStreamContent: string;
+
+  // Phase 5 States
+  devPushStatus: 'idle' | 'pushing' | 'swarm_running' | 'completed';
+  releaseDecision: 'GO' | 'NO-GO' | 'PENDING';
+  releaseReadinessScore: number;
+  resilienceScore: number;
+  chaosMode: 'none' | 'network_throttle' | 'cpu_spike' | 'service_shutdown';
+  finopsCostImpact: number;
+  piiLeaksFound: number;
+  activeTriage: {
+    assignedTo: string;
+    file: string;
+    commit: string;
+    jiraTicket: string;
+    slackChannel: string;
+    packageSent: boolean;
+    reproductionPath: string;
+    stackTrace: string;
+  } | null;
+  triggerDevPush: () => void;
+  setChaosMode: (mode: 'none' | 'network_throttle' | 'cpu_spike' | 'service_shutdown') => void;
 }
 
 export const useAxiomStore = create<AxiomState>((set, get) => ({
@@ -364,7 +385,11 @@ export const useAxiomStore = create<AxiomState>((set, get) => ({
     { id: 'sec-3', name: 'Authentication Bypass - IDOR', category: 'security', status: 'Queued' },
     
     { id: 'perf-1', name: 'Load Test - 1000 Users', category: 'performance', status: 'Queued' },
-    { id: 'perf-2', name: 'API Response Time - P95', category: 'performance', status: 'Queued' }
+    { id: 'perf-2', name: 'API Response Time - P95', category: 'performance', status: 'Queued' },
+
+    { id: 'comp-1', name: 'PII Payload Masking - Payment Gateway', category: 'compliance', status: 'Generated' },
+    { id: 'comp-2', name: 'GDPR Log Sanitization check', category: 'compliance', status: 'Generating' },
+    { id: 'comp-3', name: 'CCPA Data Encryption Audit', category: 'compliance', status: 'Queued' }
   ],
   startGeneratingTests: () => {
     set({ isGeneratingTests: true, testGenProgress: 0 });
@@ -499,7 +524,10 @@ export const useAxiomStore = create<AxiomState>((set, get) => ({
     { name: 'Test Generator', role: 'Intelligent test generation', status: 'Active', operation: 'Generating payment tests', cpu: 68, memory: '1.8 GB', tasks: 15 },
     { name: 'Execution Agent', role: 'Test execution & validation', status: 'Active', operation: 'Running integration tests', cpu: 72, memory: '2.1 GB', tasks: 18 },
     { name: 'Root Cause Agent', role: 'Failure analysis & RCA', status: 'Active', operation: 'Analyzing test failures', cpu: 55, memory: '1.4 GB', tasks: 10 },
-    { name: 'Coverage Agent', role: 'Coverage analysis & gaps', status: 'Active', operation: 'Calculating coverage gaps', cpu: 28, memory: '756 MB', tasks: 6 }
+    { name: 'Coverage Agent', role: 'Coverage analysis & gaps', status: 'Active', operation: 'Calculating coverage gaps', cpu: 28, memory: '756 MB', tasks: 6 },
+    { name: 'Chaos Engineering', role: 'Staging disaster injector', status: 'Active', operation: 'Monitoring system elasticity', cpu: 15, memory: '1.1 GB', tasks: 3 },
+    { name: 'Explorer Agent', role: 'Automated UI map crawler', status: 'Active', operation: 'Mapping UI views', cpu: 25, memory: '912 MB', tasks: 4 },
+    { name: 'API Test Agent', role: 'Concurrent endpoint validator', status: 'Active', operation: 'Validating backend routing', cpu: 30, memory: '850 MB', tasks: 5 }
   ],
   agentTasks: [
     { id: 1, priority: 1, task: 'Analyze order payment flow', agent: 'Code Analyzer', status: 'In Progress', progress: 75, eta: '2m 34s' },
@@ -634,4 +662,283 @@ export const useAxiomStore = create<AxiomState>((set, get) => ({
   generatedTests: [],
   aiStreaming: false,
   aiStreamContent: '',
+
+  // Phase 5 Default States
+  devPushStatus: 'idle',
+  releaseDecision: 'GO',
+  releaseReadinessScore: 92,
+  resilienceScore: 95,
+  chaosMode: 'none',
+  finopsCostImpact: 1850,
+  piiLeaksFound: 0,
+  activeTriage: null,
+
+  // Phase 5 Actions
+  setChaosMode: (mode) => {
+    let score = 95;
+    let cpu = 15;
+    if (mode === 'network_throttle') {
+      score = 82;
+      cpu = 48;
+    } else if (mode === 'cpu_spike') {
+      score = 86;
+      cpu = 99;
+    } else if (mode === 'service_shutdown') {
+      score = 42;
+      cpu = 76;
+    }
+
+    set((state) => {
+      const updatedAgents = state.agents.map((agent) => {
+        if (agent.name === 'Chaos Engineering') {
+          return { 
+            ...agent, 
+            status: (mode !== 'none' ? 'Active' : 'Idle') as 'Active' | 'Idle' | 'Busy', 
+            cpu, 
+            operation: mode !== 'none' ? `Injecting ${mode}` : 'Monitoring system elasticity' 
+          };
+        }
+        return agent;
+      });
+
+      return {
+        chaosMode: mode,
+        resilienceScore: score,
+        agents: updatedAgents
+      };
+    });
+  },
+
+  triggerDevPush: () => {
+    const { chaosMode } = get();
+    
+    // 1. Reset state for new push
+    set({
+      devPushStatus: 'pushing',
+      releaseDecision: 'PENDING',
+      validationRunning: true,
+      validationProgress: 0,
+      activeValidationStep: 1,
+      validationRunStatus: 'Running',
+      piiLeaksFound: 0,
+      activeTriage: null,
+      apiCalls: [],
+      dbChanges: [],
+      validationLogs: [
+        { time: '11:27:01', type: 'INFO', message: 'Git Push Detected: Commit f89a2b1 by developer @britt.' },
+        { time: '11:27:02', type: 'INFO', message: 'Triggering Autonomous QA Swarm gates concurrently...' }
+      ],
+      agentLogs: [
+        `11:27:02 [Swarm -> All Agents] Dev push f89a2b1 detected. Waking up agents...`,
+        ...get().agentLogs
+      ]
+    });
+
+    // Busy agents
+    set((state) => ({
+      agents: state.agents.map(a => 
+        a.name === 'Explorer Agent' || a.name === 'API Test Agent' || a.name === 'Chaos Engineering'
+          ? { ...a, status: 'Busy', operation: 'Validating code push' }
+          : a
+      )
+    }));
+
+    // Start simulation steps
+    setTimeout(() => {
+      // Step 2: Swarm Running
+      set((state) => ({
+        devPushStatus: 'swarm_running',
+        validationProgress: 15,
+        activeValidationStep: 1,
+        validationLogs: [
+          ...state.validationLogs,
+          { time: '11:27:03', type: 'INFO', message: 'Explorer Agent: Starting client UI route crawlers...' },
+          { time: '11:27:03', type: 'INFO', message: 'API Test Agent: Initiating backend REST API endpoint validation...' }
+        ],
+        agentLogs: [
+          `11:27:03 [Explorer Agent] Crawling views: /checkout, /cart, /orders`,
+          `11:27:03 [API Test Agent] Thread pool running: testing 18 controllers...`,
+          ...state.agentLogs
+        ]
+      }));
+    }, 1000);
+
+    setTimeout(() => {
+      // Step 3: Explorer Agent maps UI, API test runs validation
+      const baseApiCall = { method: 'POST', url: '/api/auth/login', status: 200, time: 88, size: '1.2 KB', type: 'fetch', offset: 5, duration: 20, color: 'success' as const };
+      
+      set((state) => ({
+        validationProgress: 40,
+        activeValidationStep: 3,
+        apiCalls: [baseApiCall],
+        validationLogs: [
+          ...state.validationLogs,
+          { time: '11:27:04', type: 'SUCCESS', message: 'Explorer Agent: UI map generated successfully. 4 screens, 28 inputs mapped.' },
+          { time: '11:27:04', type: 'INFO', message: 'Security Scan: Running compliance and PII data leak guardrails on payloads...' }
+        ],
+        agentLogs: [
+          `11:27:04 [Explorer Agent -> Swarm] UI mapping complete. No DOM errors found.`,
+          `11:27:04 [Security Agent] Inspected payload log signatures: AES-256 validation active.`,
+          ...state.agentLogs
+        ]
+      }));
+    }, 2500);
+
+    setTimeout(() => {
+      // Step 4: Security scan compliance & Chaos injection
+      let apiCallsList = [...get().apiCalls];
+      let dbChangesList = [...get().dbChanges];
+      let logs = [...get().validationLogs];
+      
+      // Inject some API calls
+      apiCallsList.push(
+        { method: 'GET', url: '/api/products', status: 200, time: 92, size: '24.5 KB', type: 'fetch', offset: 15, duration: 25, color: 'success' as const },
+        { method: 'GET', url: '/api/cart', status: 200, time: chaosMode === 'network_throttle' ? 1200 : 75, size: '1.8 KB', type: 'fetch', offset: 30, duration: chaosMode === 'network_throttle' ? 80 : 18, color: 'success' as const }
+      );
+
+      dbChangesList.push(
+        { table: 'orders', operation: 'INSERT', rows: 1, time: '11:27:05' }
+      );
+
+      let piiFound = 0;
+      if (chaosMode === 'service_shutdown') {
+        piiFound = 0;
+        logs.push({ time: '11:27:05', type: 'WARN', message: 'Chaos Engineering: Fault Injection Active [service_shutdown]' });
+      } else {
+        // Standard scan
+        logs.push({ time: '11:27:05', type: 'SUCCESS', message: 'Security Scan: GDPR & CCPA Compliance checks passed. 0 leaks found.' });
+      }
+
+      set((state) => ({
+        validationProgress: 70,
+        activeValidationStep: 4,
+        apiCalls: apiCallsList,
+        dbChanges: dbChangesList,
+        piiLeaksFound: piiFound,
+        validationLogs: logs,
+        agentLogs: [
+          `11:27:05 [Chaos Engineering] Injecting ${chaosMode.toUpperCase()} in staging target...`,
+          `11:27:05 [Security Agent] Payload PII verification finished.`,
+          ...state.agentLogs
+        ]
+      }));
+    }, 4000);
+
+    setTimeout(() => {
+      // Step 5: Final validation checks (checkout)
+      let apiCallsList = [...get().apiCalls];
+      let dbChangesList = [...get().dbChanges];
+      let logs = [...get().validationLogs];
+      
+      let finalDecision: 'GO' | 'NO-GO' = 'GO';
+      let readiness = 96;
+      let resilience = get().resilienceScore;
+      let runStatus: 'Passed' | 'Failed' = 'Passed';
+      let triageData = null;
+
+      if (chaosMode === 'service_shutdown') {
+        apiCallsList.push(
+          { method: 'POST', url: '/api/payments', status: 503, time: 480, size: '250 B', type: 'fetch', offset: 60, duration: 60, color: 'danger' as const }
+        );
+        logs.push(
+          { time: '11:27:06', type: 'ERROR', message: 'API Test Agent: POST /api/payments failed (503 Service Unavailable).' },
+          { time: '11:27:06', type: 'ERROR', message: 'Validation Suite Halted: System resilience validation failed.' },
+          { time: '11:27:06', type: 'INFO', message: 'Auto-Triage: Git blame history analyzed. Assigned breaking change to @britt.' },
+          { time: '11:27:07', type: 'SUCCESS', message: 'Auto-Routing: Rich reproducer package uploaded to Jira AXIOM-902 & Slack #eng-alerts.' }
+        );
+
+        finalDecision = 'NO-GO';
+        readiness = 38;
+        resilience = 42;
+        runStatus = 'Failed';
+
+        triageData = {
+          assignedTo: '@britt',
+          file: 'orders.controller.ts',
+          commit: 'f89a2b1',
+          jiraTicket: 'AXIOM-902',
+          slackChannel: '#eng-alerts',
+          packageSent: true,
+          reproductionPath: '1. Navigate to /checkout\n2. Fill out cart and click "Place Order"\n3. Service calls Payment gateway API\n4. Payment gateway fails with status 503 (Mock Failure Mode: Service Shutdown)',
+          stackTrace: 'Error: Connection Refused (service_offline)\n  at HttpClient.post (http.ts:45)\n  at PaymentService.process (payments.ts:12)\n  at OrdersController.checkout (orders.controller.ts:184)\n  at ExpressRouter.handle (router.js:23)'
+        };
+
+      } else if (chaosMode === 'network_throttle') {
+        apiCallsList.push(
+          { method: 'POST', url: '/api/payments', status: 200, time: 2450, size: '1.2 KB', type: 'fetch', offset: 60, duration: 250, color: 'warning' as const }
+        );
+        dbChangesList.push(
+          { table: 'payments', operation: 'INSERT', rows: 1, time: '11:27:06' }
+        );
+        logs.push(
+          { time: '11:27:06', type: 'WARN', message: 'SLA Warning: POST /api/payments response latency of 2450ms exceeds P95 SLA of 500ms.' },
+          { time: '11:27:06', type: 'SUCCESS', message: 'Validation Completed (with warnings). System recovered gracefully.' }
+        );
+
+        finalDecision = 'GO';
+        readiness = 78;
+        resilience = 82;
+        runStatus = 'Passed';
+
+      } else if (chaosMode === 'cpu_spike') {
+        apiCallsList.push(
+          { method: 'POST', url: '/api/payments', status: 200, time: 145, size: '1.2 KB', type: 'fetch', offset: 60, duration: 30, color: 'success' as const }
+        );
+        dbChangesList.push(
+          { table: 'payments', operation: 'INSERT', rows: 1, time: '11:27:06' }
+        );
+        logs.push(
+          { time: '11:27:06', type: 'WARN', message: 'Hardware Alert: Server host CPU exceeded 90% utilization limit during payment transactions.' },
+          { time: '11:27:06', type: 'SUCCESS', message: 'Validation Completed. System remained stable.' }
+        );
+
+        finalDecision = 'GO';
+        readiness = 84;
+        resilience = 86;
+        runStatus = 'Passed';
+
+      } else {
+        // None (Normal)
+        apiCallsList.push(
+          { method: 'POST', url: '/api/payments', status: 200, time: 82, size: '1.2 KB', type: 'fetch', offset: 60, duration: 20, color: 'success' as const }
+        );
+        dbChangesList.push(
+          { table: 'payments', operation: 'INSERT', rows: 1, time: '11:27:06' }
+        );
+        logs.push(
+          { time: '11:27:06', type: 'SUCCESS', message: 'SLA Check Passed: latency 82ms <= 500ms.' },
+          { time: '11:27:06', type: 'SUCCESS', message: 'Autonomous validation pipeline passed. Zero errors detected.' }
+        );
+
+        finalDecision = 'GO';
+        readiness = 96;
+        resilience = 95;
+        runStatus = 'Passed';
+      }
+
+      set((state) => ({
+        devPushStatus: 'completed',
+        releaseDecision: finalDecision,
+        releaseReadinessScore: readiness,
+        resilienceScore: resilience,
+        validationProgress: 100,
+        validationRunning: false,
+        validationRunStatus: runStatus,
+        apiCalls: apiCallsList,
+        dbChanges: dbChangesList,
+        validationLogs: logs,
+        activeTriage: triageData,
+        agents: state.agents.map(a => 
+          a.name === 'Explorer Agent' || a.name === 'API Test Agent'
+            ? { ...a, status: 'Active', operation: 'Monitoring codebase' }
+            : a
+        ),
+        agentLogs: [
+          `11:27:06 [Swarm] Decision rendered: ${finalDecision} (${readiness}% score)`,
+          `11:27:06 [Execution Agent -> Core] Validation sequence finished. Status: ${runStatus}`,
+          ...state.agentLogs
+        ]
+      }));
+    }, 6000);
+  }
 }));

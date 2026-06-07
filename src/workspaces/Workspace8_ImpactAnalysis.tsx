@@ -1,6 +1,6 @@
 import React from 'react';
 import { useAxiomStore } from '../store/axiomStore';
-import { Eye, AlertTriangle, Cpu, Radio, Network, Server, Play } from 'lucide-react';
+import { Eye, AlertTriangle, Cpu, Radio, Network, Server, Play, DollarSign, TrendingUp, AlertOctagon } from 'lucide-react';
 
 export const Workspace8_ImpactAnalysis: React.FC = () => {
   const { modifiedCodePath } = useAxiomStore();
@@ -32,9 +32,11 @@ export const Workspace8_ImpactAnalysis: React.FC = () => {
         <div className="border-b border-cyan-500/20 pb-3 flex justify-between items-center">
           <div>
             <h2 className="text-lg font-black text-cyan-400 uppercase tracking-widest flex items-center gap-2">
-              <Network size={20} className="text-cyan-400" /> Impact Analysis
+              <Network size={20} className="text-cyan-400 animate-pulse" /> Impact Analysis
             </h2>
-            <span className="text-[11px] text-slate-400 font-mono uppercase tracking-wider block mt-0.5">Ripple simulation mapping changes to UI components, database rows, & test scopes.</span>
+            <span className="text-[11px] text-slate-400 font-mono uppercase tracking-wider block mt-0.5">
+              Ripple simulation mapping changes to UI components, database rows, & resource cost predictions.
+            </span>
           </div>
         </div>
 
@@ -167,31 +169,31 @@ export const Workspace8_ImpactAnalysis: React.FC = () => {
           </div>
         </div>
 
-        {/* Bottom Section */}
+        {/* Bottom Section: 4-Column Grid layout containing FinOps cost prediction */}
         <div className="grid grid-cols-12 gap-4 min-h-0 select-none">
           
-          {/* Bottom Left: Dependency Paths (Width 4/12) */}
-          <div className="col-span-4 bg-[#050b18]/80 border border-cyan-500/20 rounded-lg p-3 flex flex-col min-h-0 text-xs shadow-[0_0_15px_rgba(6,182,212,0.03)]">
-            <span className="text-[9px] font-bold font-mono text-cyan-400 uppercase tracking-widest block mb-2 pb-1.5 border-b border-cyan-500/10">Dependency Flow Score</span>
+          {/* Bottom Left: Dependency Paths (Width 3/12) */}
+          <div className="col-span-3 bg-[#050b18]/80 border border-cyan-500/20 rounded-lg p-3 flex flex-col min-h-[140px] text-xs shadow-[0_0_15px_rgba(6,182,212,0.03)]">
+            <span className="text-[9px] font-bold font-mono text-cyan-400 uppercase tracking-widest block mb-2 pb-1.5 border-b border-cyan-500/10 font-mono">Dependency Flow Score</span>
             <div className="flex-1 overflow-y-auto pr-1 min-h-0 space-y-2 text-[10px] font-mono leading-tight">
               {paths.map((p, idx) => (
                 <div key={idx} className="flex justify-between items-center py-1 hover:bg-cyan-500/5 px-1 rounded transition-all">
-                  <span className="text-slate-400 truncate max-w-[200px]">{p.flow}</span>
+                  <span className="text-slate-400 truncate max-w-[130px]">{p.flow}</span>
                   <span className={`font-bold font-mono ml-2 shrink-0 ${p.col}`}>{p.score}</span>
                 </div>
               ))}
             </div>
           </div>
 
-          {/* Bottom Middle: Timeline Logs (Width 4/12) */}
-          <div className="col-span-4 bg-[#050b18]/80 border border-cyan-500/20 rounded-lg p-3 flex flex-col min-h-0 text-xs shadow-[0_0_15px_rgba(6,182,212,0.03)]">
-            <span className="text-[9px] font-bold font-mono text-cyan-400 uppercase tracking-widest block mb-2 pb-1.5 border-b border-cyan-500/10">Analysis Telemetry</span>
+          {/* Bottom Middle: Timeline Logs (Width 3/12) */}
+          <div className="col-span-3 bg-[#050b18]/80 border border-cyan-500/20 rounded-lg p-3 flex flex-col min-h-[140px] text-xs shadow-[0_0_15px_rgba(6,182,212,0.03)]">
+            <span className="text-[9px] font-bold font-mono text-cyan-400 uppercase tracking-widest block mb-2 pb-1.5 border-b border-cyan-500/10 font-mono">Analysis Telemetry</span>
             <div className="flex-1 overflow-y-auto pr-1 min-h-0 space-y-2 font-mono text-[9.5px] text-slate-400 leading-normal">
               {timeline.map((item, idx) => (
                 <div key={idx} className="flex justify-between">
                   <div className="flex space-x-2">
                     <span className="text-cyan-500/50 shrink-0">{item.time}</span>
-                    <span className="text-slate-200">{item.event}</span>
+                    <span className="text-slate-200 truncate max-w-[120px]">{item.event}</span>
                   </div>
                   <span className="text-slate-500 shrink-0 font-medium">{item.diff}</span>
                 </div>
@@ -199,25 +201,65 @@ export const Workspace8_ImpactAnalysis: React.FC = () => {
             </div>
           </div>
 
-          {/* Bottom Right: Top Risky Nodes (Width 4/12) */}
-          <div className="col-span-4 bg-[#050b18]/80 border border-cyan-500/20 rounded-lg p-3 flex flex-col min-h-0 text-xs shadow-[0_0_15px_rgba(6,182,212,0.03)]">
-            <span className="text-[9px] font-bold font-mono text-cyan-400 uppercase tracking-widest block mb-2 pb-1.5 border-b border-cyan-500/10">High Risk Nodes</span>
-            <div className="flex-1 overflow-y-auto pr-1 min-h-0 space-y-2 font-mono text-[10px]">
+          {/* Bottom Right: Top Risky Nodes (Width 3/12) */}
+          <div className="col-span-3 bg-[#050b18]/80 border border-cyan-500/20 rounded-lg p-3 flex flex-col min-h-[140px] text-xs shadow-[0_0_15px_rgba(6,182,212,0.03)]">
+            <span className="text-[9px] font-bold font-mono text-cyan-400 uppercase tracking-widest block mb-2 pb-1.5 border-b border-cyan-500/10 font-mono">High Risk Nodes</span>
+            <div className="flex-1 overflow-y-auto pr-1 min-h-0 space-y-1.5 font-mono text-[10px]">
               {[
                 { name: 'PaymentService', type: 'Service', risk: 9.8, col: 'text-red-400' },
                 { name: 'payments', type: 'Table', risk: 9.6, col: 'text-red-400' },
                 { name: 'OrderService', type: 'Service', risk: 9.2, col: 'text-red-400' },
-                { name: 'checkout.e2e.spec.ts', type: 'Test', risk: 9.1, col: 'text-red-400' },
-                { name: 'order.service.spec.ts', type: 'Test', risk: 8.9, col: 'text-yellow-400' }
+                { name: 'checkout.spec.ts', type: 'Test', risk: 9.1, col: 'text-red-400' }
               ].map(node => (
                 <div key={node.name} className="flex justify-between items-center py-1 hover:bg-cyan-500/5 px-1 rounded transition-all">
                   <div className="flex items-center space-x-2 truncate">
-                    <span className="text-slate-100 font-bold truncate">{node.name}</span>
-                    <span className="text-[7.5px] uppercase font-bold text-cyan-400 bg-cyan-500/10 border border-cyan-500/30 px-1.5 rounded shrink-0 font-mono">{node.type}</span>
+                    <span className="text-slate-100 font-bold truncate max-w-[80px]">{node.name}</span>
+                    <span className="text-[7px] uppercase font-bold text-cyan-400 bg-cyan-500/10 border border-cyan-500/30 px-1 rounded shrink-0 font-mono">{node.type}</span>
                   </div>
                   <span className={`font-bold font-mono ml-2 shrink-0 ${node.col}`}>{node.risk}</span>
                 </div>
               ))}
+            </div>
+          </div>
+
+          {/* New 4th Column: FinOps & Cloud Cost Predictor (Width 3/12) */}
+          <div className="col-span-3 bg-[#050b18]/80 border border-red-500/20 rounded-lg p-3 flex flex-col min-h-[140px] text-xs shadow-[0_0_15px_rgba(239,68,68,0.02)]">
+            <div className="flex justify-between items-center mb-2 pb-1.5 border-b border-cyan-500/10 font-mono">
+              <span className="text-[9px] font-bold text-cyan-400 uppercase tracking-widest font-mono flex items-center space-x-1">
+                <DollarSign className="h-3.5 w-3.5 text-cyan-400 shrink-0" />
+                <span>FinOps Cost Predictor</span>
+              </span>
+              <span className="bg-red-500/10 border border-red-500/30 text-red-400 font-bold font-mono text-[7.5px] px-1 rounded">
+                REGRESSION
+              </span>
+            </div>
+
+            <div className="flex-1 font-mono text-[9px] text-slate-300 space-y-1.5 leading-normal overflow-y-auto">
+              <div className="flex justify-between items-center bg-[#02050b] p-1.5 rounded border border-red-500/15">
+                <div>
+                  <span className="text-[7.5px] text-slate-500 block uppercase leading-none font-bold">PROJECTED COST DELTA</span>
+                  <span className="text-red-400 font-bold text-[11px] font-mono tracking-wide">+$1,850 / mo</span>
+                </div>
+                <div className="text-right">
+                  <span className="text-[7.5px] text-slate-500 block uppercase leading-none font-bold">COMPUTE SPIKE</span>
+                  <span className="text-red-400 font-bold text-[11px] flex items-center font-mono">
+                    <TrendingUp className="h-3 w-3 inline text-red-400 mr-0.5 shrink-0" /> +160%
+                  </span>
+                </div>
+              </div>
+
+              <div className="p-1 bg-[#02050b]/40 border border-cyan-500/5 rounded">
+                <div className="text-slate-200 font-bold text-[8.5px] flex items-center gap-1">
+                  <AlertOctagon className="h-3 w-3 text-yellow-400 shrink-0" />
+                  <span>Unindexed Join Query Detected</span>
+                </div>
+                <div className="text-slate-500 text-[7.5px] leading-tight font-bold truncate mt-0.5 bg-black/40 px-1 py-0.5 rounded text-cyan-300/80">
+                  orders.controller.ts:L184
+                </div>
+                <p className="text-slate-400 text-[7.5px] leading-tight mt-1">
+                  Query joins `orders` and unindexed `payments` rows, causing intensive database RDS scaling under checkout load.
+                </p>
+              </div>
             </div>
           </div>
 

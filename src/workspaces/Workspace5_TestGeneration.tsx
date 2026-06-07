@@ -13,7 +13,10 @@ const CODE_TEMPLATES: Record<string, string> = {
   'ui-3': `import { test, expect } from '@playwright/test';\n\ntest('Checkout Process - Guest User', async ({ page }) => {\n  await page.goto('/checkout');\n  await page.fill('#shipping-first-name', 'Maria');\n  await page.fill('#shipping-last-name', 'Jones');\n  await page.fill('#shipping-address', '100 Cyber Road');\n  await page.click('button.proceed-to-payment');\n  \n  const paymentSection = page.locator('#stripe-card-element');\n  await expect(paymentSection).toBeVisible();\n});`,
   'api-1': `import request from 'supertest';\nimport app from '../app';\n\ndescribe('POST /api/auth/login', () => {\n  it('should authenticate user and return jwt token', async () => {\n    const res = await request(app)\n      .post('/api/auth/login')\n      .send({\n        email: 'test@axiom.ai',\n        password: 'Password123'\n      });\n    expect(res.statusCode).toEqual(200);\n    expect(res.body).toHaveProperty('token');\n  });\n});`,
   'api-2': `import request from 'supertest';\nimport app from '../app';\n\ndescribe('GET /api/products', () => {\n  it('should return paginated products list', async () => {\n    const res = await request(app).get('/api/products?page=1&limit=10');\n    expect(res.statusCode).toEqual(200);\n    expect(res.body.data).toBeInstanceOf(Array);\n    expect(res.body.data.length).toBeLessThanOrEqual(10);\n  });\n});`,
-  'api-3': `import request from 'supertest';\nimport app from '../app';\n\ndescribe('POST /api/orders', () => {\n  it('should create order and deduct inventory', async () => {\n    const res = await request(app)\n      .post('/api/orders')\n      .send({\n        items: [{ id: 'prod-102', qty: 2 }],\n        couponCode: 'WELCOME20'\n      });\n    expect(res.statusCode).toEqual(201);\n    expect(res.body.orderId).toBeDefined();\n  });\n});`
+  'api-3': `import request from 'supertest';\nimport app from '../app';\n\ndescribe('POST /api/orders', () => {\n  it('should create order and deduct inventory', async () => {\n    const res = await request(app)\n      .post('/api/orders')\n      .send({\n        items: [{ id: 'prod-102', qty: 2 }],\n        couponCode: 'WELCOME20'\n      });\n    expect(res.statusCode).toEqual(201);\n    expect(res.body.orderId).toBeDefined();\n  });\n});`,
+  'comp-1': `import { scanPayload } from '@axiom/compliance-guardrails';\nimport { checkoutPayload } from './mockData';\n\ndescribe('PII Payload Masking - Payment Gateway', () => {\n  it('should mask sensitive customer data prior to logging', () => {\n    const result = scanPayload(checkoutPayload);\n    expect(result.email).toBe('[MASKED]');\n    expect(result.creditCard).toBe('[MASKED]');\n    expect(result.phone).toBe('[MASKED]');\n    expect(result.hasUnmaskedPII).toBe(false);\n  });\n});`,
+  'comp-2': `import { verifyLogsCompliance } from '@axiom/compliance-guardrails';\n\ndescribe('GDPR Log Sanitization check', () => {\n  it('should ensure database audit logs do not contain raw emails or phone numbers', () => {\n    const logs = ['[INFO] Order created successfully for user 9048', '[INFO] Payment executed by client'];\n    const analysis = verifyLogsCompliance(logs);\n    expect(analysis.leaksCount).toBe(0);\n    expect(analysis.isGDPRCompliant).toBe(true);\n  });\n});`,
+  'comp-3': `import { auditEncryption } from '@axiom/compliance-guardrails';\n\ndescribe('CCPA Data Encryption Audit', () => {\n  it('should verify transport layer security and db field encryption', () => {\n    const dbStatus = auditEncryption('orders_db');\n    expect(dbStatus.sslEnabled).toBe(true);\n    expect(dbStatus.encryptedFields).toContain('credit_card_hash');\n    expect(dbStatus.encryptedFields).toContain('billing_address');\n  });\n});`
 };
 
 export const Workspace5_TestGeneration: React.FC = () => {
@@ -43,7 +46,8 @@ export const Workspace5_TestGeneration: React.FC = () => {
     'db': true,
     'integration': true,
     'security': true,
-    'performance': true
+    'performance': true,
+    'compliance': false
   });
 
   const toggleCat = (cat: string) => {
@@ -62,6 +66,7 @@ export const Workspace5_TestGeneration: React.FC = () => {
   const intTests = filteredTests.filter(t => t.category === 'integration');
   const secTests = filteredTests.filter(t => t.category === 'security');
   const perfTests = filteredTests.filter(t => t.category === 'performance');
+  const compTests = filteredTests.filter(t => t.category === 'compliance');
 
   const getStatusIcon = (status: string) => {
     if (status === 'Generated') return <CheckCircle className="h-3.5 w-3.5 text-green-400 shrink-0" />;
@@ -316,6 +321,26 @@ Make it a real, production-ready, beautiful test block.`;
                 selectedId={selectedTestId}
                 onSelect={handleTestClick}
               />
+              <TestCategory 
+                title="COMPLIANCE & PRIVACY GUARDRAILS" 
+                count={`${compTests.filter(t => t.status === 'Generated').length}/${compTests.length}`}
+                tests={compTests} 
+                isCollapsed={collapsedCats.compliance} 
+                onToggle={() => toggleCat('compliance')} 
+                getIcon={getStatusIcon}
+                selectedId={selectedTestId}
+                onSelect={handleTestClick}
+              />
+              <TestCategory 
+                title="PERFORMANCE TESTS" 
+                count={`${perfTests.filter(t => t.status === 'Generated').length}/${perfTests.length}`}
+                tests={perfTests} 
+                isCollapsed={collapsedCats.performance} 
+                onToggle={() => toggleCat('performance')} 
+                getIcon={getStatusIcon}
+                selectedId={selectedTestId}
+                onSelect={handleTestClick}
+              />
             </div>
           </div>
         </div>
@@ -390,7 +415,7 @@ const TestCategory: React.FC<{
         onClick={onToggle}
         className="px-2.5 py-1.5 bg-surface/10 hover:bg-surface/20 border-b border-cyan-500/5 flex justify-between items-center cursor-pointer transition-colors"
       >
-        <div className="flex items-center space-x-1.5 font-bold text-[9.5px] text-white font-mono">
+        <div className="flex items-center space-x-1.5 font-bold text-[9px] text-white font-mono">
           <span>{title}</span>
           <span className="text-[8.5px] font-mono text-cyan-400 bg-[#02050b] px-1 rounded border border-cyan-500/10">{count}</span>
         </div>
@@ -399,6 +424,9 @@ const TestCategory: React.FC<{
 
       {!isCollapsed && (
         <div className="p-1.5 space-y-1 bg-transparent">
+          {tests.length === 0 && (
+            <div className="text-center py-2 text-slate-600 font-mono text-[9px]">NO TESTS REGISTERED</div>
+          )}
           {tests.map(test => {
             const isSelected = test.id === selectedId;
             return (
